@@ -7,9 +7,11 @@
 	<groupId>it.cavallium</groupId>
 	<artifactId>vertx-rpc-services</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
@@ -17,6 +19,18 @@
 		<vertx.version>4.5.8</vertx.version>
 		<junit-jupiter.version>5.10.2</junit-jupiter.version>
 	</properties>
+	<distributionManagement>
+		<repository>
+			<id>mchv-release-distribution</id>
+			<name>MCHV Release Apache Maven Packages Distribution</name>
+			<url>https://mvn.mchv.eu/repository/mchv</url>
+		</repository>
+		<snapshotRepository>
+			<id>mchv-snapshot-distribution</id>
+			<name>MCHV Snapshot Apache Maven Packages Distribution</name>
+			<url>https://mvn.mchv.eu/repository/mchv-snapshot</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 	<repositories>
 		<repository>
