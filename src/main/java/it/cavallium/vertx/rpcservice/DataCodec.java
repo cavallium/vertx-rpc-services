@@ -1,6 +1,7 @@
 package it.cavallium.vertx.rpcservice;
 
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
 
@@ -16,9 +17,10 @@ public record DataCodec<T>(MessageCodec<T, T> codec) {
 
 		@Override
 		public Object decodeFromWire(int pos, Buffer buffer) {
-			Buffer buf = Buffer.buffer();
-			this.pos2 = buffer.readFromBuffer(pos, buf);
-			return Json.decodeValue(buf);
+			int len = buffer.getInt(pos);
+			Buffer bufferData = buffer.getBuffer(pos + 4, pos + 4 + len);
+			this.pos2 = pos + 4 + len;
+			return Json.decodeValue(bufferData);
 		}
 
 		public int getPos2() {
