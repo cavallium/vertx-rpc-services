@@ -3,6 +3,7 @@ package it.cavallium.vertx.rpcservice;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import it.cavallium.vertx.rpcservice.ServiceMethodRequest.ServiceMethodRequestMessageCodec;
 import it.cavallium.vertx.rpcservice.ServiceMethodReturnValue.ServiceMethodReturnValueMessageCodec;
@@ -124,6 +125,7 @@ public class ServiceClient<T> {
 					throw new UnsupportedOperationException("Method \"" + method + "\" is not annotated with @ServiceMethod!");
 				}
 			}
+			var returnTypeClass = method.getReturnType();
 			var methodData = methodDataMap.get(method);
 			var address = methodData.address;
 			var request = new ServiceMethodRequest(args);
@@ -131,7 +133,14 @@ public class ServiceClient<T> {
 			return switch (methodData.arity) {
 				case COMPLETABLE -> requestSingle.ignoreElement();
 				case MAYBE -> requestSingle.mapOptional(msg -> Optional.ofNullable(msg.body().value()));
-				case SINGLE -> requestSingle.map(msg -> msg.body().value());
+				case SINGLE -> requestSingle.map(msg -> {
+					var value = msg.body().value();
+					if (value.getClass() == JsonObject.class && returnTypeClass != JsonObject.class) {
+						return ((JsonObject) value).mapTo(returnTypeClass);
+					} else {
+						return value;
+					}
+				});
 			};
 		}
 	}
