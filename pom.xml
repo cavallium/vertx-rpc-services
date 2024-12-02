@@ -6,17 +6,19 @@
 
 	<groupId>it.cavallium</groupId>
 	<artifactId>vertx-rpc-services</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
+	<version>${revision}</version>
 	<packaging>jar</packaging>
 
 	<properties>
+		<revision>1.0.0-SNAPSHOT</revision>
+
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
 
-		<vertx.version>4.5.8</vertx.version>
+		<vertx.version>5.0.0.CR2</vertx.version>
 		<junit-jupiter.version>5.10.2</junit-jupiter.version>
 	</properties>
 	<distributionManagement>
