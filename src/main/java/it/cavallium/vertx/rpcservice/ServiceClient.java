@@ -130,7 +130,7 @@ public class ServiceClient<T> {
 			var methodData = methodDataMap.get(method);
 			var address = methodData.address;
 			var request = new ServiceMethodRequest(args);
-			var requestSingle = vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request);
+			var requestSingle = Single.defer(() -> vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request));
 
 			Class<?> returnTypeClass;
 			if (methodData.arity != ReturnArity.COMPLETABLE) {
