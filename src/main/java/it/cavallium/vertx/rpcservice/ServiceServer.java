@@ -10,6 +10,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.Handler;
+import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.eventbus.Message;
 import io.vertx.rxjava3.core.eventbus.MessageConsumer;
@@ -67,6 +68,17 @@ public class ServiceServer<T> implements RxCloseable {
 
 				if (req.arguments() == null && paramsCount > 0) {
 					msg.fail(500, "Arguments array is null, expected " + paramsCount + " arguments");
+				}
+
+				if (req.arguments() != null) {
+					for (int i = 0; i < req.arguments().length; i++) {
+						var arg = req.arguments()[i];
+						var parameterType = declaredMethod.getParameterTypes()[i];
+						if (arg != null && arg.getClass() == JsonObject.class && parameterType != JsonObject.class) {
+							// Replace argument with the decoded version
+							req.arguments()[i] = ((JsonObject) arg).mapTo(parameterType);
+						}
+					}
 				}
 
 				switch (arity) {
