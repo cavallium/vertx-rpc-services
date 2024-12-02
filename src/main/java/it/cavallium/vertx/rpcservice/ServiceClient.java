@@ -3,7 +3,9 @@ package it.cavallium.vertx.rpcservice;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.rxjava3.core.Vertx;
 import it.cavallium.vertx.rpcservice.ServiceMethodRequest.ServiceMethodRequestMessageCodec;
 import it.cavallium.vertx.rpcservice.ServiceMethodReturnValue.ServiceMethodReturnValueMessageCodec;
@@ -125,17 +127,37 @@ public class ServiceClient<T> {
 					throw new UnsupportedOperationException("Method \"" + method + "\" is not annotated with @ServiceMethod!");
 				}
 			}
-			var returnTypeClass = method.getReturnType();
 			var methodData = methodDataMap.get(method);
 			var address = methodData.address;
 			var request = new ServiceMethodRequest(args);
 			var requestSingle = vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request);
+
+			Class<?> returnTypeClass;
+			if (methodData.arity != ReturnArity.COMPLETABLE) {
+				var genericReturnType = (ParameterizedType) method.getGenericReturnType();
+				var returnType = genericReturnType.getActualTypeArguments()[0];
+				if (returnType instanceof Class<?> c) {
+					returnTypeClass = c;
+				} else {
+					returnTypeClass = null;
+				}
+			} else {
+				returnTypeClass = null;
+			}
+
 			return switch (methodData.arity) {
 				case COMPLETABLE -> requestSingle.ignoreElement();
-				case MAYBE -> requestSingle.mapOptional(msg -> Optional.ofNullable(msg.body().value()));
+				case MAYBE -> requestSingle.mapOptional(msg -> {
+					var value = msg.body().value();
+					if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
+						return Optional.ofNullable(((JsonObject) value).mapTo(returnTypeClass));
+					} else {
+						return Optional.ofNullable(value);
+					}
+				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					if (value.getClass() == JsonObject.class && returnTypeClass != JsonObject.class) {
+					if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 						return ((JsonObject) value).mapTo(returnTypeClass);
 					} else {
 						return value;
