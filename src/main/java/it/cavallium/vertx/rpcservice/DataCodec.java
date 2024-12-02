@@ -1,7 +1,6 @@
 package it.cavallium.vertx.rpcservice;
 
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.eventbus.MessageCodec;
 import io.vertx.core.json.Json;
 
