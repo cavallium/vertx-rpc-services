@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -152,6 +153,8 @@ public class ServiceClient<T> {
 					var value = msg.body().value();
 					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return Optional.of(UUID.fromString((String) value));
+					} else if (value != null && value.getClass() == Double.class && returnTypeClass == Double.class) {
+						return Optional.of(Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L)));
 					} else if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 						return Optional.ofNullable(((JsonObject) value).mapTo(returnTypeClass));
 					} else {
@@ -160,8 +163,10 @@ public class ServiceClient<T> {
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
+					if (value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return UUID.fromString((String) value);
+					} else if (value.getClass() == Double.class && returnTypeClass == Instant.class) {
+						return Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L));
 					} else if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 						return ((JsonObject) value).mapTo(returnTypeClass);
 					} else {

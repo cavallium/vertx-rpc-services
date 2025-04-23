@@ -17,6 +17,7 @@ import io.vertx.rxjava3.core.eventbus.MessageConsumer;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -79,8 +80,10 @@ public class ServiceServer<T> implements RxCloseable {
 						if (arg != null && arg.getClass() == String.class && parameterType == UUID.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = UUID.fromString((String) arg);
-						}
-						if (arg != null && arg.getClass() == JsonObject.class && parameterType != JsonObject.class) {
+						} else if (arg != null && arg.getClass() == Double.class && parameterType == Instant.class) {
+							// Replace argument with the decoded version
+							req.arguments()[i] = Instant.ofEpochSecond((long) (double) (Double) arg, (long) (((Double) arg) * 1000000000L % 1000000000L));
+						} else if (arg != null && arg.getClass() == JsonObject.class && parameterType != JsonObject.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = ((JsonObject) arg).mapTo(parameterType);
 						}
