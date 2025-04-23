@@ -19,6 +19,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
+
 import org.jetbrains.annotations.NotNull;
 import it.cavallium.vertx.rpcservice.ServiceMethodReturnValue.ServiceMethodReturnValueMessageCodec;
 import it.cavallium.vertx.rpcservice.ServiceMethodRequest.ServiceMethodRequestMessageCodec;
@@ -74,6 +76,10 @@ public class ServiceServer<T> implements RxCloseable {
 					for (int i = 0; i < req.arguments().length; i++) {
 						var arg = req.arguments()[i];
 						var parameterType = declaredMethod.getParameterTypes()[i];
+						if (arg != null && arg.getClass() == String.class && parameterType == UUID.class) {
+							// Replace argument with the decoded version
+							req.arguments()[i] = UUID.fromString((String) arg);
+						}
 						if (arg != null && arg.getClass() == JsonObject.class && parameterType != JsonObject.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = ((JsonObject) arg).mapTo(parameterType);
