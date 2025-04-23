@@ -17,6 +17,7 @@ import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
@@ -149,7 +150,9 @@ public class ServiceClient<T> {
 				case COMPLETABLE -> requestSingle.ignoreElement();
 				case MAYBE -> requestSingle.mapOptional(msg -> {
 					var value = msg.body().value();
-					if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
+					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
+						return Optional.of(UUID.fromString((String) value));
+					} else if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 						return Optional.ofNullable(((JsonObject) value).mapTo(returnTypeClass));
 					} else {
 						return Optional.ofNullable(value);
@@ -157,7 +160,9 @@ public class ServiceClient<T> {
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
+					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
+						return UUID.fromString((String) value);
+					} else if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 						return ((JsonObject) value).mapTo(returnTypeClass);
 					} else {
 						return value;

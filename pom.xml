@@ -18,7 +18,7 @@
 		<maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
 
-		<vertx.version>5.0.0.CR2</vertx.version>
+		<vertx.version>5.0.0.CR7</vertx.version>
 		<junit-jupiter.version>5.10.2</junit-jupiter.version>
 	</properties>
 	<distributionManagement>
