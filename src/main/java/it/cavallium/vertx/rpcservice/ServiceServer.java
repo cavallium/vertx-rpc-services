@@ -80,6 +80,9 @@ public class ServiceServer<T> implements RxCloseable {
 						if (arg != null && arg.getClass() == String.class && parameterType == UUID.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = UUID.fromString((String) arg);
+						} else if (arg != null && arg.getClass() == Integer.class && parameterType == Long.class) {
+							// Replace argument with the decoded version
+							req.arguments()[i] = (long) (int) (Integer) arg;
 						} else if (arg != null && arg.getClass() == Double.class && parameterType == Instant.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = Instant.ofEpochSecond((long) (double) (Double) arg, (long) (((Double) arg) * 1000000000L % 1000000000L));

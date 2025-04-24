@@ -153,6 +153,8 @@ public class ServiceClient<T> {
 					var value = msg.body().value();
 					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return Optional.of(UUID.fromString((String) value));
+					} else if (value != null && value.getClass() == Integer.class && returnTypeClass == Long.class) {
+						return Optional.of((long) (int) (Integer) value);
 					} else if (value != null && value.getClass() == Double.class && returnTypeClass == Double.class) {
 						return Optional.of(Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L)));
 					} else if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
@@ -165,6 +167,8 @@ public class ServiceClient<T> {
 					var value = msg.body().value();
 					if (value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return UUID.fromString((String) value);
+					} else if (value.getClass() == Integer.class && returnTypeClass == Long.class) {
+						return (long) (int) (Integer) value;
 					} else if (value.getClass() == Double.class && returnTypeClass == Instant.class) {
 						return Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L));
 					} else if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
