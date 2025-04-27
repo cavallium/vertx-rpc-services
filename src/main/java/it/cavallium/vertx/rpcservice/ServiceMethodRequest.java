@@ -20,9 +20,11 @@ record ServiceMethodRequest(Object[] arguments) {
 
 		@Override
 		public void encodeToWire(Buffer buffer, ServiceMethodRequest request) {
-			for (int i = 0; i < request.arguments.length; i++) {
-				var argument = request.arguments[i];
-				dataCodec.encodeToWire(buffer, argument);
+			if (request.arguments != null) {
+				for (int i = 0; i < request.arguments.length; i++) {
+					var argument = request.arguments[i];
+					dataCodec.encodeToWire(buffer, argument);
+				}
 			}
 		}
 
