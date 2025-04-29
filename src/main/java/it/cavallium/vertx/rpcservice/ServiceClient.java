@@ -151,7 +151,10 @@ public class ServiceClient<T> {
 				case COMPLETABLE -> requestSingle.ignoreElement();
 				case MAYBE -> requestSingle.mapOptional(msg -> {
 					var value = msg.body().value();
-					if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
+					if (value != null && value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
+						//noinspection rawtypes,unchecked
+						return Optional.of(Enum.valueOf((Class) returnTypeClass, (String) value));
+					} else if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return Optional.of(UUID.fromString((String) value));
 					} else if (value != null && value.getClass() == Integer.class && returnTypeClass == Long.class) {
 						return Optional.of((long) (int) (Integer) value);
@@ -165,7 +168,10 @@ public class ServiceClient<T> {
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					if (value.getClass() == String.class && returnTypeClass == UUID.class) {
+					if (value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
+						//noinspection rawtypes,unchecked
+						return Enum.valueOf((Class) returnTypeClass, (String) value);
+					} else if (value.getClass() == String.class && returnTypeClass == UUID.class) {
 						return UUID.fromString((String) value);
 					} else if (value.getClass() == Integer.class && returnTypeClass == Long.class) {
 						return (long) (int) (Integer) value;

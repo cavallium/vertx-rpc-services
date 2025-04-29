@@ -77,7 +77,11 @@ public class ServiceServer<T> implements RxCloseable {
 					for (int i = 0; i < req.arguments().length; i++) {
 						var arg = req.arguments()[i];
 						var parameterType = declaredMethod.getParameterTypes()[i];
-						if (arg != null && arg.getClass() == String.class && parameterType == UUID.class) {
+						if (arg != null && arg.getClass() == String.class && parameterType.isEnum()) {
+							// Replace argument with the decoded version
+							//noinspection rawtypes,unchecked
+							req.arguments()[i] = Enum.valueOf((Class) parameterType, (String) arg);
+						} else if (arg != null && arg.getClass() == String.class && parameterType == UUID.class) {
 							// Replace argument with the decoded version
 							req.arguments()[i] = UUID.fromString((String) arg);
 						} else if (arg != null && arg.getClass() == Integer.class && parameterType == Long.class) {
