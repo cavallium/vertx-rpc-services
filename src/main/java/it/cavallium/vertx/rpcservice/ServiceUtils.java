@@ -49,14 +49,14 @@ class ServiceUtils {
 		Class<?> returnTypeClass;
 		ParameterizedType returnTypeParametrized;
 		if (returnType instanceof ParameterizedType parameterizedType) {
+			returnTypeClass = parameterizedType.getRawType() instanceof Class<?> clazz ? clazz : null;
 			returnTypeParametrized = parameterizedType;
-		} else {
-			returnTypeParametrized = null;
-		}
-		if (returnType instanceof Class<?> c) {
+		} else if (returnType instanceof Class<?> c) {
 			returnTypeClass = c;
+			returnTypeParametrized = null;
 		} else {
 			returnTypeClass = null;
+			returnTypeParametrized = null;
 		}
 
 		Object result;
@@ -75,7 +75,7 @@ class ServiceUtils {
 			} else if (value.getClass() == JsonArray.class && returnTypeClass != null && returnTypeClass != List.class) {
 				var valueJsonArray = ((JsonArray) value);
 				var size = valueJsonArray.size();
-				var resultList = new ArrayList<Object>(size);
+				var resultList = new ArrayList<>(size);
 				var elementType = returnTypeParametrized.getActualTypeArguments()[0];
 				for (Object element : valueJsonArray) {
 					if (element instanceof JsonObject jsonObject) {
