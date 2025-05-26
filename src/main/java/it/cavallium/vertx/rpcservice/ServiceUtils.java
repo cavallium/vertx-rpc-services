@@ -72,7 +72,7 @@ class ServiceUtils {
 				result = Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L));
 			} else if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
 				result = ((JsonObject) value).mapTo(returnTypeClass);
-			} else if (value.getClass() == JsonArray.class && returnTypeClass != null && returnTypeClass != List.class) {
+			} else if (value.getClass() == JsonArray.class && returnTypeClass == List.class) {
 				var valueJsonArray = ((JsonArray) value);
 				var size = valueJsonArray.size();
 				var resultList = new ArrayList<>(size);
