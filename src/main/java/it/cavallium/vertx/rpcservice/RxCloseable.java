@@ -7,12 +7,12 @@ import io.vertx.core.Promise;
 public interface RxCloseable extends Closeable, AutoCloseable {
 
 	@Override
-	default void close(Promise<Void> completion) {
-		rxClose().subscribe(completion::complete, completion::fail);
+	default void close(io.vertx.core.Completable<Void> completable) {
+		rxClose().subscribe(completable::succeed, completable::fail);
 	}
 
 	/**
-	 * Use {@link #close(Promise)}
+	 * Use {@link #close(io.vertx.core.Completable)}
 	 */
 	@Deprecated
 	@Override

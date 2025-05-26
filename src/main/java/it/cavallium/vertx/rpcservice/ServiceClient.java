@@ -4,6 +4,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.rxjava3.core.Vertx;
@@ -16,6 +17,7 @@ import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -134,54 +136,23 @@ public class ServiceClient<T> {
 			var request = new ServiceMethodRequest(args);
 			var requestSingle = Single.defer(() -> vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request));
 
-			Class<?> returnTypeClass;
+			Type returnType;
 			if (methodData.arity != ReturnArity.COMPLETABLE) {
 				var genericReturnType = (ParameterizedType) method.getGenericReturnType();
-				var returnType = genericReturnType.getActualTypeArguments()[0];
-				if (returnType instanceof Class<?> c) {
-					returnTypeClass = c;
-				} else {
-					returnTypeClass = null;
-				}
+				returnType = genericReturnType.getActualTypeArguments()[0];
 			} else {
-				returnTypeClass = null;
+				returnType = null;
 			}
 
 			return switch (methodData.arity) {
 				case COMPLETABLE -> requestSingle.ignoreElement();
 				case MAYBE -> requestSingle.mapOptional(msg -> {
 					var value = msg.body().value();
-					if (value != null && value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
-						//noinspection rawtypes,unchecked
-						return Optional.of(Enum.valueOf((Class) returnTypeClass, (String) value));
-					} else if (value != null && value.getClass() == String.class && returnTypeClass == UUID.class) {
-						return Optional.of(UUID.fromString((String) value));
-					} else if (value != null && value.getClass() == Integer.class && returnTypeClass == Long.class) {
-						return Optional.of((long) (int) (Integer) value);
-					} else if (value != null && value.getClass() == Double.class && returnTypeClass == Double.class) {
-						return Optional.of(Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L)));
-					} else if (value != null && value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
-						return Optional.ofNullable(((JsonObject) value).mapTo(returnTypeClass));
-					} else {
-						return Optional.ofNullable(value);
-					}
+					return Optional.ofNullable(ServiceUtils.castToType(returnType, value));
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					if (value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
-						//noinspection rawtypes,unchecked
-						return Enum.valueOf((Class) returnTypeClass, (String) value);
-					} else if (value.getClass() == String.class && returnTypeClass == UUID.class) {
-						return UUID.fromString((String) value);
-					} else if (value.getClass() == Integer.class && returnTypeClass == Long.class) {
-						return (long) (int) (Integer) value;
-					} else if (value.getClass() == Double.class && returnTypeClass == Instant.class) {
-						return Instant.ofEpochSecond((long) (double) (Double) value, (long) (((Double) value) * 1000000000L % 1000000000L));
-					} else if (value.getClass() == JsonObject.class && returnTypeClass != null && returnTypeClass != JsonObject.class) {
-						return ((JsonObject) value).mapTo(returnTypeClass);
-					} else {
-						return value;
-					}
+					return Optional.of(ServiceUtils.castToType(returnType, value));
 				});
 			};
 		}
