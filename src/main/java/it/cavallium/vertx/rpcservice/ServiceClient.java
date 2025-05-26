@@ -152,7 +152,7 @@ public class ServiceClient<T> {
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					return Optional.of(ServiceUtils.castToType(returnType, value));
+					return ServiceUtils.castToType(returnType, value);
 				});
 			};
 		}
