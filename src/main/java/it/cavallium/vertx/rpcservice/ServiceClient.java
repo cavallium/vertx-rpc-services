@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -152,7 +153,7 @@ public class ServiceClient<T> {
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					return ServiceUtils.castToType(returnType, value);
+					return Objects.requireNonNull(ServiceUtils.castToType(returnType, value));
 				});
 			};
 		}
