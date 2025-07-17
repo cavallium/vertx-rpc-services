@@ -78,11 +78,7 @@ class ServiceUtils {
 				var resultList = new ArrayList<>(size);
 				var elementType = returnTypeParametrized.getActualTypeArguments()[0];
 				for (Object element : valueJsonArray) {
-					if (element instanceof JsonObject jsonObject) {
-						resultList.add(jsonObject.mapTo((Class<?>) elementType));
-					} else {
-						resultList.add(element);
-					}
+					resultList.add(castToType(elementType, element));
 				}
 				result = resultList;
 			} else {
