@@ -7,4 +7,9 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ServiceMethod {}
+public @interface ServiceMethod {
+    /**
+     * Timeout, in seconds
+     */
+    int timeout() default 30;
+}

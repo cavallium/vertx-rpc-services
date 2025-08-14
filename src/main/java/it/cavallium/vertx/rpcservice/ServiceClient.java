@@ -3,6 +3,7 @@ package it.cavallium.vertx.rpcservice;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -37,7 +38,7 @@ public class ServiceClient<T> {
 		SINGLE
 	}
 
-	private record MethodData(String address, Type returnType, ReturnArity arity) {}
+	private record MethodData(String address, Type returnType, ReturnArity arity, int timeout) {}
 
 	@SuppressWarnings("unchecked")
 	public ServiceClient(Vertx vertx, Class<T> serviceClass) {
@@ -62,10 +63,11 @@ public class ServiceClient<T> {
 			.filter(method -> method.isAnnotationPresent(ServiceMethod.class))
 			.filter(method -> !method.isDefault())
 			.collect(Collectors.toMap(Function.identity(), method -> {
+				var annotation = method.getAnnotation(ServiceMethod.class);
 				String address = ServiceUtils.getMethodEventBusAddress(serviceClass, method);
 				final ReturnArity arity = getReturnArity(serviceClass, method);
 				if (arity == ReturnArity.COMPLETABLE) {
-					return new MethodData(address, null, ReturnArity.COMPLETABLE);
+					return new MethodData(address, null, ReturnArity.COMPLETABLE, annotation.timeout());
 				} else {
 					Type returnType = method.getGenericReturnType();
 					if (returnType instanceof ParameterizedType parameterizedType) {
@@ -76,7 +78,7 @@ public class ServiceClient<T> {
 									+ "\", it should be Single<?> or Maybe<?> with a single type parameter");
 						}
 						var returnTypeInner = typeArguments[0];
-						return new MethodData(address, returnTypeInner, arity);
+						return new MethodData(address, returnTypeInner, arity, annotation.timeout());
 					} else {
 						throw new UnsupportedOperationException(
 							"Method return type is not valid for service \"" + serviceClass + "\", method \"" + method
@@ -107,12 +109,20 @@ public class ServiceClient<T> {
 
 		private final Class<T> serviceClass;
 		private final Map<Method, ServiceClient.MethodData> methodDataMap;
+		private final Map<Method, DeliveryOptions> methodDeliveryOptionsMap;
 		private final Object object;
 
 
 		public DynamicInvocationHandler(Class<T> serviceClass, Map<Method, MethodData> methodDataMap) {
 			this.serviceClass = serviceClass;
 			this.methodDataMap = methodDataMap;
+			this.methodDeliveryOptionsMap = methodDataMap.entrySet()
+					.stream()
+					.collect(Collectors.toMap(Map.Entry::getKey, e -> {
+						var deliveryOptions = new DeliveryOptions();
+						deliveryOptions.setSendTimeout(e.getValue().timeout());
+						return deliveryOptions;
+					}));
 			this.object = new Object();
 		}
 
@@ -133,9 +143,10 @@ public class ServiceClient<T> {
 				}
 			}
 			var methodData = methodDataMap.get(method);
+			var deliveryOptions = methodDeliveryOptionsMap.get(method);
 			var address = methodData.address;
 			var request = new ServiceMethodRequest(args);
-			var requestSingle = Single.defer(() -> vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request));
+			var requestSingle = Single.defer(() -> vertx.eventBus().<ServiceMethodReturnValue<?>>request(address, request, deliveryOptions));
 
 			Type returnType;
 			if (methodData.arity != ReturnArity.COMPLETABLE) {
