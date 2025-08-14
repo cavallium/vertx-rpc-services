@@ -3,11 +3,8 @@ package it.cavallium.vertx.rpcservice;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.rxjava3.core.Vertx;
 import it.cavallium.vertx.rpcservice.ServiceMethodRequest.ServiceMethodRequestMessageCodec;
 import it.cavallium.vertx.rpcservice.ServiceMethodReturnValue.ServiceMethodReturnValueMessageCodec;
@@ -16,13 +13,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
-import java.time.Instant;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
@@ -118,11 +112,8 @@ public class ServiceClient<T> {
 			this.methodDataMap = methodDataMap;
 			this.methodDeliveryOptionsMap = methodDataMap.entrySet()
 					.stream()
-					.collect(Collectors.toMap(Map.Entry::getKey, e -> {
-						var deliveryOptions = new DeliveryOptions();
-						deliveryOptions.setSendTimeout(e.getValue().timeout());
-						return deliveryOptions;
-					}));
+					.collect(Collectors.toMap(Map.Entry::getKey, e -> new DeliveryOptions()
+                            .setSendTimeout(e.getValue().timeout())));
 			this.object = new Object();
 		}
 
