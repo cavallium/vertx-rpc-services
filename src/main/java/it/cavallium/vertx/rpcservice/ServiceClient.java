@@ -113,7 +113,7 @@ public class ServiceClient<T> {
 			this.methodDeliveryOptionsMap = methodDataMap.entrySet()
 					.stream()
 					.collect(Collectors.toMap(Map.Entry::getKey, e -> new DeliveryOptions()
-                            .setSendTimeout(e.getValue().timeout())));
+                            .setSendTimeout(e.getValue().timeout() * 1000L)));
 			this.object = new Object();
 		}
 
