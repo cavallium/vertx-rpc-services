@@ -78,7 +78,7 @@ public class ServiceServer<T> implements RxCloseable {
 					for (int i = 0; i < req.arguments().length; i++) {
 						var arg = req.arguments()[i];
 						var parameterType = genericParameterTypes[i];
-						req.arguments()[i] = ServiceUtils.castToType(parameterType, arg);
+						req.arguments()[i] = ServiceUtils.castToType(true, parameterType, arg);
 					}
 				}
 

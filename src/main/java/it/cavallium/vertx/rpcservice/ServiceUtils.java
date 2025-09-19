@@ -8,11 +8,10 @@ import it.cavallium.vertx.rpcservice.ServiceClient.ReturnArity;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+
 import org.jetbrains.annotations.Nullable;
 
 class ServiceUtils {
@@ -44,7 +43,7 @@ class ServiceUtils {
 		}
 	}
 
-	public static <T> T castToType(Type returnType, @Nullable Object value) {
+	public static <T> T castToType(boolean root, Type returnType, @Nullable Object value) {
 		if (returnType == null) return null;
 		Class<?> returnTypeClass;
 		ParameterizedType returnTypeParametrized;
@@ -61,7 +60,9 @@ class ServiceUtils {
 
 		Object result;
 		if (value != null) {
-			if (value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
+			if (root && value.getClass() == String.class && returnTypeClass == byte[].class) {
+				return (T) Base64.getDecoder().decode((String) value);
+			}	else if (value.getClass() == String.class && returnTypeClass != null && returnTypeClass.isEnum()) {
 				//noinspection rawtypes,unchecked
 				result = Enum.valueOf((Class) returnTypeClass, (String) value);
 			} else if (value.getClass() == String.class && returnTypeClass == UUID.class) {
@@ -78,7 +79,7 @@ class ServiceUtils {
 				var resultList = new ArrayList<>(size);
 				var elementType = returnTypeParametrized.getActualTypeArguments()[0];
 				for (Object element : valueJsonArray) {
-					resultList.add(castToType(elementType, element));
+					resultList.add(castToType(false, elementType, element));
 				}
 				result = resultList;
 			} else {

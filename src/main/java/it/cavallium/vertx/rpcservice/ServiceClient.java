@@ -151,11 +151,11 @@ public class ServiceClient<T> {
 				case COMPLETABLE -> requestSingle.ignoreElement();
 				case MAYBE -> requestSingle.mapOptional(msg -> {
 					var value = msg.body().value();
-					return Optional.ofNullable(ServiceUtils.castToType(returnType, value));
+					return Optional.ofNullable(ServiceUtils.castToType(true, returnType, value));
 				});
 				case SINGLE -> requestSingle.map(msg -> {
 					var value = msg.body().value();
-					return Objects.requireNonNull(ServiceUtils.castToType(returnType, value));
+					return Objects.requireNonNull(ServiceUtils.castToType(true, returnType, value));
 				});
 			};
 		}

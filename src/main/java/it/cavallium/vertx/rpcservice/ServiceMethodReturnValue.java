@@ -4,6 +4,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 import it.cavallium.vertx.rpcservice.DataCodec.DataMessageCodec;
 
+import java.util.Base64;
+
 record ServiceMethodReturnValue<T>(T value) {
 
 
@@ -21,6 +23,9 @@ record ServiceMethodReturnValue<T>(T value) {
 
 		@Override
 		public void encodeToWire(Buffer buffer, ServiceMethodReturnValue request) {
+			if (request.value != null && request.value.getClass() == byte[].class) {
+				dataCodec.encodeToWire(buffer, Base64.getEncoder().encodeToString((byte[]) request.value));
+			}
 			dataCodec.encodeToWire(buffer, request.value);
 		}
 
