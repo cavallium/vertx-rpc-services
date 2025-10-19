@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 public class ServiceClient<T> {
 
 	private final Vertx vertx;
+	private final boolean localOnly;
 	private final T instance;
 
 	enum ReturnArity {
@@ -34,9 +35,14 @@ public class ServiceClient<T> {
 
 	private record MethodData(String address, Type returnType, ReturnArity arity, int timeout) {}
 
-	@SuppressWarnings("unchecked")
 	public ServiceClient(Vertx vertx, Class<T> serviceClass) {
+		this(vertx, serviceClass, false);
+	}
+
+	@SuppressWarnings("unchecked")
+	public ServiceClient(Vertx vertx, Class<T> serviceClass, boolean localOnly) {
 		this.vertx = vertx;
+		this.localOnly = localOnly;
 		ServiceUtils.tryRegisterDefaultCodec(vertx, ServiceMethodRequest.class, ServiceMethodRequestMessageCodec.INSTANCE);
 		ServiceUtils.tryRegisterDefaultCodec(vertx, ServiceMethodReturnValue.class, ServiceMethodReturnValueMessageCodec.INSTANCE);
 
@@ -113,6 +119,7 @@ public class ServiceClient<T> {
 			this.methodDeliveryOptionsMap = methodDataMap.entrySet()
 					.stream()
 					.collect(Collectors.toMap(Map.Entry::getKey, e -> new DeliveryOptions()
+														.setLocalOnly(localOnly)
                             .setSendTimeout(e.getValue().timeout() * 1000L)));
 			this.object = new Object();
 		}

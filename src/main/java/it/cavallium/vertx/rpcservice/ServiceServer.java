@@ -10,6 +10,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.vertx.core.Handler;
+import io.vertx.core.eventbus.MessageConsumerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.eventbus.Message;
@@ -33,6 +34,10 @@ public class ServiceServer<T> implements RxCloseable {
 	private static final ServiceMethodReturnValue<?> EMPTY_RESULT = new ServiceMethodReturnValue<>(null);
 
 	public ServiceServer(Vertx vertx, T service, Class<? super T> serviceClass) {
+		this(vertx, service, serviceClass, false);
+	}
+
+	public ServiceServer(Vertx vertx, T service, Class<? super T> serviceClass, boolean localOnly) {
 		this.serviceClass = serviceClass;
 		ServiceUtils.tryRegisterDefaultCodec(vertx, ServiceMethodRequest.class, ServiceMethodRequestMessageCodec.INSTANCE);
 		ServiceUtils.tryRegisterDefaultCodec(vertx, ServiceMethodReturnValue.class, ServiceMethodReturnValueMessageCodec.INSTANCE);
@@ -50,7 +55,10 @@ public class ServiceServer<T> implements RxCloseable {
 				var handler = this.createRequestHandler(service, method);
 				return new ServiceMethodDefinition(method, address, handler);
 			})
-			.map(definition -> vertx.eventBus().consumer(definition.address, definition.handler))
+			.map(definition -> {
+				var consumerOptions = new MessageConsumerOptions().setAddress(definition.address).setLocalOnly(localOnly);
+				return vertx.eventBus().consumer(consumerOptions, definition.handler);
+			})
 			.toList();
 	}
 
