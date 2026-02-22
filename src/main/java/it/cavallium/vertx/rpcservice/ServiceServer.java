@@ -99,7 +99,7 @@ public class ServiceServer<T> implements RxCloseable {
 						.subscribe(getReplyHandler(msg), getErrorHandler(msg));
 				}
 			} catch (Throwable e) {
-				msg.fail(500, e.toString());
+				msg.fail(500, formatError(e));
 			}
 		};
 	}
@@ -109,11 +109,27 @@ public class ServiceServer<T> implements RxCloseable {
 	}
 
 	private static @NotNull Consumer<Throwable> getErrorHandler(Message<ServiceMethodRequest> msg) {
-		return err -> msg.fail(500, err.toString());
+		return err -> msg.fail(500, formatError(err));
 	}
 
 	private static @NotNull Action getEmptyReplyHandler(Message<ServiceMethodRequest> msg) {
 		return () -> msg.reply(EMPTY_RESULT);
+	}
+
+	static String formatError(Throwable e) {
+		var sb = new StringBuilder();
+		sb.append(e);
+		for (var frame : e.getStackTrace()) {
+			sb.append("\n\tat ").append(frame);
+		}
+		for (var suppressed : e.getSuppressed()) {
+			sb.append("\n\tSuppressed: ").append(formatError(suppressed));
+		}
+		var cause = e.getCause();
+		if (cause != null) {
+			sb.append("\nCaused by: ").append(formatError(cause));
+		}
+		return sb.toString();
 	}
 
 	@Override

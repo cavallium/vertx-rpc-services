@@ -5,6 +5,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.ReplyException;
 import io.vertx.rxjava3.core.Vertx;
 import it.cavallium.vertx.rpcservice.ServiceMethodRequest.ServiceMethodRequestMessageCodec;
 import it.cavallium.vertx.rpcservice.ServiceMethodReturnValue.ServiceMethodReturnValueMessageCodec;
@@ -154,13 +155,20 @@ public class ServiceClient<T> {
 				returnType = null;
 			}
 
+			var errorMappedSingle = requestSingle.onErrorResumeNext(err -> {
+				if (err instanceof ReplyException re) {
+					return Single.error(new RemoteServiceException(re.failureCode(), re.getMessage(), re.getMessage()));
+				}
+				return Single.error(err);
+			});
+
 			return switch (methodData.arity) {
-				case COMPLETABLE -> requestSingle.ignoreElement();
-				case MAYBE -> requestSingle.mapOptional(msg -> {
+				case COMPLETABLE -> errorMappedSingle.ignoreElement();
+				case MAYBE -> errorMappedSingle.mapOptional(msg -> {
 					var value = msg.body().value();
 					return Optional.ofNullable(ServiceUtils.castToType(true, returnType, value));
 				});
-				case SINGLE -> requestSingle.map(msg -> {
+				case SINGLE -> errorMappedSingle.map(msg -> {
 					var value = msg.body().value();
 					return Objects.requireNonNull(ServiceUtils.castToType(true, returnType, value));
 				});
