@@ -15,6 +15,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.eventbus.Message;
 import io.vertx.rxjava3.core.eventbus.MessageConsumer;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -117,19 +119,9 @@ public class ServiceServer<T> implements RxCloseable {
 	}
 
 	static String formatError(Throwable e) {
-		var sb = new StringBuilder();
-		sb.append(e);
-		for (var frame : e.getStackTrace()) {
-			sb.append("\n\tat ").append(frame);
-		}
-		for (var suppressed : e.getSuppressed()) {
-			sb.append("\n\tSuppressed: ").append(formatError(suppressed));
-		}
-		var cause = e.getCause();
-		if (cause != null) {
-			sb.append("\nCaused by: ").append(formatError(cause));
-		}
-		return sb.toString();
+		var sw = new StringWriter();
+		e.printStackTrace(new PrintWriter(sw));
+		return sw.toString();
 	}
 
 	@Override

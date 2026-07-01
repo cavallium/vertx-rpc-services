@@ -1,6 +1,7 @@
 package it.cavallium.vertx.rpcservice.service;
 
 import io.vertx.rxjava3.core.Vertx;
+import it.cavallium.vertx.rpcservice.RemoteServiceException;
 import it.cavallium.vertx.rpcservice.ServiceClient;
 import it.cavallium.vertx.rpcservice.ServiceServer;
 import it.cavallium.vertx.rpcservice.service.MathService.BooleanOperation;
@@ -38,6 +39,12 @@ public class TestService {
 			Assertions.assertTrue(clientInstance.calculateCustomRecordOr(new BooleanOperation(false, true)).blockingGet().result());
 			Assertions.assertNull(clientInstance.calculateMaybe(false).blockingGet());
 			Assertions.assertTrue(clientInstance.calculateMaybe(true).blockingGet(false));
+			var error = Assertions.assertThrows(RemoteServiceException.class,
+					() -> clientInstance.failWithNestedThrowable().blockingGet());
+			var message = error.getMessage();
+			Assertions.assertTrue(message.contains("java.lang.IllegalArgumentException: top-level marker"));
+			Assertions.assertTrue(message.contains("Suppressed: java.lang.UnsupportedOperationException: suppressed marker"));
+			Assertions.assertTrue(message.contains("Caused by: java.lang.IllegalStateException: root cause marker"));
 		}
 	}
 }

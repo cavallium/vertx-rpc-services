@@ -40,6 +40,9 @@ public interface MathService {
 	@ServiceMethod
 	Single<ComputedBooleanOperation> calculateCustomRecordOr(BooleanOperation op);
 
+	@ServiceMethod
+	Single<Boolean> failWithNestedThrowable();
+
 	record BooleanOperation(boolean a, Boolean b) {}
 
 	record ComputedBooleanOperation(BooleanOperation input, boolean result) {}

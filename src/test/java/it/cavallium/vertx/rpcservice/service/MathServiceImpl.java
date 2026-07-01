@@ -57,4 +57,12 @@ class MathServiceImpl implements MathService {
 	public Maybe<Boolean> calculateMaybe(boolean shouldReturn) {
 		return shouldReturn ? Maybe.just(true) : Maybe.empty();
 	}
+
+	@Override
+	public Single<Boolean> failWithNestedThrowable() {
+		var rootCause = new IllegalStateException("root cause marker");
+		var failure = new IllegalArgumentException("top-level marker", rootCause);
+		failure.addSuppressed(new UnsupportedOperationException("suppressed marker"));
+		return Single.error(failure);
+	}
 }
