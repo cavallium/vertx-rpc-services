@@ -9,7 +9,7 @@ With this simple library, you can implement very complex and performant async RP
 - Stack: Java 21, Vert.x 5, RxJava 3, Maven
 - Module type: Library (JAR)
 - Transport: Vert.x Event Bus (local or cluster; `localOnly` supported)
-- Programming model: Annotated interfaces + RxJava return types (`Single<T>`, `Maybe<T>`, `Completable`)
+- Programming model: Annotated interfaces + RxJava return types (`Single<T>`, `Maybe<T>`, `Completable`, `Flowable<T>`)
 - Addressing: `t_service_{InterfaceSimpleName}#methodName`
 
 What you write:
@@ -57,6 +57,9 @@ public interface MathService {
 
   @ServiceMethod
   Completable warmup();
+
+  @ServiceMethod
+  Flowable<Integer> streamRange(int start, int count);
 }
 ```
 
@@ -67,6 +70,7 @@ public class MathServiceImpl implements MathService {
   public Single<Integer> sum(int a, int b) { return Single.just(a + b); }
   public Maybe<String> findPrimeName(int n) { return Maybe.empty(); }
   public Completable warmup() { return Completable.complete(); }
+  public Flowable<Integer> streamRange(int start, int count) { return Flowable.range(start, count); }
 }
 ```
 
@@ -117,6 +121,7 @@ That’s it. The library registers compact message codecs, converts payloads to 
   - `Single<T>`: exactly one value
   - `Maybe<T>`: zero or one value
   - `Completable`: no value, success/failure only
+  - `Flowable<T>`: zero or more values with client-driven backpressure, cancellation, completion and error propagation
 
 ## Configuration and Environment
 
@@ -135,9 +140,24 @@ mvn clean              # clean build outputs
 mvn test               # run unit tests (JUnit 5)
 mvn package            # build JAR
 mvn install            # install to local repository
+mvn -Pbenchmark verify # run JMH benchmarks
 ```
 
 Tests use JUnit Jupiter (5.x). You can run them from your IDE or the command line.
+
+Benchmarks use JMH and are kept behind the `benchmark` Maven profile so normal test runs stay fast.
+The default profile runs the RPC benchmark suite with one fork, three warmup iterations, five measurement iterations and the JMH GC profiler.
+The benchmark suite includes throughput, average-latency, sample-latency and direct in-process baseline measurements.
+JMH reports allocation rate and bytes/op via `-prof gc`; use those numbers as regression guardrails, not as mathematical proof of optimality.
+For quick smoke checks, override the profile properties, for example:
+
+```
+mvn -Pbenchmark -DskipTests \
+  -Djmh.includes=it.cavallium.vertx.rpcservice.service.ServiceRpcBenchmark.flowableRpcRangeSumThroughput \
+  -Djmh.warmupIterations=1 -Djmh.measurementIterations=1 \
+  -Djmh.warmupTime=100ms -Djmh.measurementTime=100ms \
+  verify
+```
 
 ## Project Structure
 

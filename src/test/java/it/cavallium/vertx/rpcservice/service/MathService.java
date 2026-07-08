@@ -1,6 +1,7 @@
 package it.cavallium.vertx.rpcservice.service;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import it.cavallium.vertx.rpcservice.ServiceClass;
@@ -42,6 +43,30 @@ public interface MathService {
 
 	@ServiceMethod
 	Single<Boolean> failWithNestedThrowable();
+
+	@ServiceMethod
+	Flowable<Integer> calculateRange(int start, int count);
+
+	@ServiceMethod
+	Flowable<Integer> calculateBackpressuredRange(int count);
+
+	@ServiceMethod
+	Flowable<Integer> calculateTrackedWindowRange(int count);
+
+	@ServiceMethod
+	Flowable<Integer> calculateEmptyFlowable();
+
+	@ServiceMethod
+	Flowable<Integer> failWithNestedThrowableFlowable();
+
+	@ServiceMethod
+	Flowable<Integer> failFlowableAfterItems(int count);
+
+	@ServiceMethod
+	Flowable<Integer> calculateNeverFlowable();
+
+	@ServiceMethod
+	Flowable<byte[]> calculateBytesFlowable(byte[] input);
 
 	record BooleanOperation(boolean a, Boolean b) {}
 

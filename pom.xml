@@ -17,7 +17,9 @@
 
 		<maven-compiler-plugin.version>3.12.1</maven-compiler-plugin.version>
 		<maven-surefire-plugin.version>3.0.0-M7</maven-surefire-plugin.version>
+		<exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
 
+		<jmh.version>1.36</jmh.version>
 		<vertx.version>5.0.0</vertx.version>
 		<junit-jupiter.version>5.10.2</junit-jupiter.version>
 	</properties>
@@ -86,6 +88,18 @@
 			<version>${junit-jupiter.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-core</artifactId>
+			<version>${jmh.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-generator-annprocess</artifactId>
+			<version>${jmh.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -95,6 +109,13 @@
 				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>21</release>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.openjdk.jmh</groupId>
+							<artifactId>jmh-generator-annprocess</artifactId>
+							<version>${jmh.version}</version>
+						</path>
+					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -121,6 +142,61 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>benchmark</id>
+			<properties>
+				<jmh.includes>it.cavallium.vertx.rpcservice.service.ServiceRpcBenchmark</jmh.includes>
+				<jmh.warmupIterations>3</jmh.warmupIterations>
+				<jmh.measurementIterations>5</jmh.measurementIterations>
+				<jmh.warmupTime>1s</jmh.warmupTime>
+				<jmh.measurementTime>1s</jmh.measurementTime>
+				<jmh.forks>1</jmh.forks>
+				<jmh.profilers>gc</jmh.profilers>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>${exec-maven-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>jmh</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>exec</goal>
+								</goals>
+								<configuration>
+									<executable>${java.home}/bin/java</executable>
+									<classpathScope>test</classpathScope>
+									<arguments>
+										<argument>-cp</argument>
+										<classpath/>
+										<argument>org.openjdk.jmh.Main</argument>
+										<argument>${jmh.includes}</argument>
+										<argument>-wi</argument>
+										<argument>${jmh.warmupIterations}</argument>
+										<argument>-i</argument>
+										<argument>${jmh.measurementIterations}</argument>
+										<argument>-w</argument>
+										<argument>${jmh.warmupTime}</argument>
+										<argument>-r</argument>
+										<argument>${jmh.measurementTime}</argument>
+										<argument>-f</argument>
+										<argument>${jmh.forks}</argument>
+										<argument>-prof</argument>
+										<argument>${jmh.profilers}</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 
 </project>

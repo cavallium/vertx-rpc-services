@@ -8,13 +8,18 @@ import it.cavallium.vertx.rpcservice.ServiceClient.ReturnArity;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jetbrains.annotations.Nullable;
 
 class ServiceUtils {
+
+	private static final String STREAM_ADDRESS_INSTANCE_ID = Long.toUnsignedString(ThreadLocalRandom.current().nextLong(),
+		Character.MAX_RADIX);
+	private static final AtomicLong STREAM_ADDRESS_SEQUENCE = new AtomicLong();
 
 	static String getMethodEventBusAddress(Class<?> serviceClass, Method method) {
 		return getMethodEventBusAddress(getMethodEventBusAddressPrefix(serviceClass), method);
@@ -26,6 +31,13 @@ class ServiceUtils {
 
 	static String getMethodEventBusAddressPrefix(Class<?> serviceClass) {
 		return "t_service_" + serviceClass.getSimpleName() + "#";
+	}
+
+	static String newStreamAddress(String prefix) {
+		return prefix
+			+ STREAM_ADDRESS_INSTANCE_ID
+			+ "."
+			+ Long.toUnsignedString(STREAM_ADDRESS_SEQUENCE.incrementAndGet(), Character.MAX_RADIX);
 	}
 
 	@SuppressWarnings("StatementWithEmptyBody")
