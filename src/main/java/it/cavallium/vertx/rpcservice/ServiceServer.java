@@ -83,6 +83,13 @@ public class ServiceServer<T> implements RxCloseable {
 			.toList();
 	}
 
+	public static List<String> eventBusAddresses(Class<?> serviceClass) {
+		return Arrays.stream(serviceClass.getDeclaredMethods())
+				.filter(method -> method.isAnnotationPresent(ServiceMethod.class))
+				.map(method -> getMethodEventBusAddress(serviceClass, method))
+				.toList();
+	}
+
 	private Handler<Message<ServiceMethodRequest>> createRequestHandler(T service, Method declaredMethod) {
 		var lookup = MethodHandles.publicLookup();
 		MethodHandle mh;

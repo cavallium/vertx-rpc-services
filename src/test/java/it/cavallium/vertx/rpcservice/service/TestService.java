@@ -51,4 +51,13 @@ public class TestService {
 			v.close().blockingAwait();
 		}
 	}
+
+	@Test
+	public void exposesTheAuthoritativeServiceAddresses() {
+		var addresses = ServiceServer.eventBusAddresses(MathService.class);
+
+		Assertions.assertFalse(addresses.isEmpty());
+		Assertions.assertTrue(addresses.stream().allMatch(address -> address.startsWith("t_service_MathService#")));
+		Assertions.assertTrue(addresses.contains("t_service_MathService#calculateAnd"));
+	}
 }
