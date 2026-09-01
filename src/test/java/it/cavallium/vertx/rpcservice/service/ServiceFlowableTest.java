@@ -2,7 +2,12 @@ package it.cavallium.vertx.rpcservice.service;
 
 import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.Handler;
+import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.DeliveryContext;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.metrics.MetricsOptions;
+import io.vertx.core.spi.metrics.EventBusMetrics;
+import io.vertx.core.spi.metrics.VertxMetrics;
 import io.vertx.rxjava3.core.Vertx;
 import it.cavallium.vertx.rpcservice.RemoteServiceException;
 import it.cavallium.vertx.rpcservice.ServiceClient;
@@ -107,6 +112,21 @@ public class ServiceFlowableTest {
 			waitUntil(fixture.service::neverFlowableSubscribed);
 			never.cancel();
 			waitUntil(fixture.service::neverFlowableCancelled);
+		}
+	}
+
+	@Test
+	public void firstElementCancellationKeepsResponseConsumerUntilRemoteTerminalSettles() {
+		var metrics = new CountingEventBusMetrics();
+		try (var fixture = new RpcFixture(metrics)) {
+			Assertions.assertEquals(42,
+				fixture.client.calculateRange(42, 1).firstElement().blockingGet());
+
+			waitUntil(() -> metrics.streamResponseSettlements() >= 2);
+			Assertions.assertEquals(0, metrics.streamResponseDiscards(),
+				"A terminal already in flight must not reach an unregistered response consumer");
+			Assertions.assertEquals(2, metrics.streamResponseDeliveries(),
+				"The first item and the late terminal must both settle before consumer teardown");
 		}
 	}
 
@@ -260,6 +280,43 @@ public class ServiceFlowableTest {
 		}
 	}
 
+	private static final class CountingEventBusMetrics implements EventBusMetrics<String> {
+
+		private final AtomicInteger streamResponseDeliveries = new AtomicInteger();
+		private final AtomicInteger streamResponseDiscards = new AtomicInteger();
+
+		@Override
+		public String handlerRegistered(String address) {
+			return address;
+		}
+
+		@Override
+		public void messageDelivered(String address, boolean local) {
+			if (isStreamResponse(address)) streamResponseDeliveries.incrementAndGet();
+		}
+
+		@Override
+		public void discardMessage(String address, boolean local, Message<?> message) {
+			if (isStreamResponse(address)) streamResponseDiscards.incrementAndGet();
+		}
+
+		private int streamResponseDeliveries() {
+			return streamResponseDeliveries.get();
+		}
+
+		private int streamResponseDiscards() {
+			return streamResponseDiscards.get();
+		}
+
+		private int streamResponseSettlements() {
+			return streamResponseDeliveries() + streamResponseDiscards();
+		}
+
+		private static boolean isStreamResponse(String address) {
+			return address != null && address.startsWith("r.");
+		}
+	}
+
 	private static final class RpcFixture implements AutoCloseable {
 
 		private final Vertx vertx;
@@ -269,7 +326,27 @@ public class ServiceFlowableTest {
 		private boolean serverClosed;
 
 		private RpcFixture() {
-			this.vertx = Vertx.vertx();
+			this(null);
+		}
+
+		private RpcFixture(CountingEventBusMetrics eventBusMetrics) {
+			this.vertx = eventBusMetrics == null
+				? Vertx.vertx()
+				: Vertx.newInstance(io.vertx.core.Vertx.builder()
+					.with(new VertxOptions().setMetricsOptions(
+						new MetricsOptions().setEnabled(true)))
+					.withMetrics(options -> new VertxMetrics() {
+						@Override
+						public EventBusMetrics<?> createEventBusMetrics() {
+							return eventBusMetrics;
+						}
+
+						@Override
+						public boolean isMetricsEnabled() {
+							return true;
+						}
+					})
+					.build());
 			this.service = new MathServiceImpl();
 			this.server = new ServiceServer<>(vertx, service, MathService.class);
 			this.client = new ServiceClient<>(vertx, MathService.class).getInstance();

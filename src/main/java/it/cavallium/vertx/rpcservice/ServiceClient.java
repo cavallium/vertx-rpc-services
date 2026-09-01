@@ -248,6 +248,7 @@ public class ServiceClient<T> {
 		private final AtomicBoolean opening;
 		private final AtomicBoolean cancelled;
 		private final AtomicBoolean terminated;
+		private final AtomicBoolean cancelSent;
 		private final AtomicBoolean responseAddressSent;
 		private final AtomicReference<String> controlAddress;
 		private volatile MessageConsumer<ServiceStreamMessage> responseConsumer;
@@ -269,6 +270,7 @@ public class ServiceClient<T> {
 			this.opening = new AtomicBoolean();
 			this.cancelled = new AtomicBoolean();
 			this.terminated = new AtomicBoolean();
+			this.cancelSent = new AtomicBoolean();
 			this.responseAddressSent = new AtomicBoolean();
 			this.controlAddress = new AtomicReference<>();
 		}
@@ -287,8 +289,7 @@ public class ServiceClient<T> {
 		public void cancel() {
 			if (cancelled.compareAndSet(false, true)) {
 				terminated.set(true);
-				sendCancel();
-				unregisterResponseConsumer();
+				settleCancellation();
 			}
 		}
 
@@ -320,8 +321,11 @@ public class ServiceClient<T> {
 					}
 					controlAddress.set(streamControlAddress);
 					if (cancelled.get() || terminated.get()) {
-						sendCancel();
-						unregisterResponseConsumer();
+						if (cancelled.get()) {
+							settleCancellation();
+						} else {
+							unregisterResponseConsumer();
+						}
 						return;
 					}
 					drainRemoteDemand();
@@ -479,21 +483,33 @@ public class ServiceClient<T> {
 				}, err -> terminateWithError(mapReplyException(err), true));
 		}
 
-		private void sendCancel() {
+		private void settleCancellation() {
 			var streamControlAddress = controlAddress.get();
-			if (streamControlAddress != null) {
-				vertx.eventBus().send(streamControlAddress, new ServiceStreamControl(null, 0L, true), deliveryOptions);
+			if (streamControlAddress == null) {
+				// The server does not know the response address until the initial stream request
+				// completes, so no stream message can target this consumer yet. If the request
+				// completes later, openRemoteStream() will send the cancellation then.
+				unregisterResponseConsumer();
+				return;
 			}
+			if (!cancelSent.compareAndSet(false, true)) {
+				return;
+			}
+			var control = new ServiceStreamControl(null, 0L, true);
+			vertx.eventBus().<Boolean>request(streamControlAddress, control, deliveryOptions)
+				.subscribe(ignored -> unregisterResponseConsumer(),
+					ignored -> unregisterResponseConsumer());
 		}
 
 		private void terminateWithError(Throwable err, boolean cancelRemote) {
 			if (terminated.compareAndSet(false, true)) {
 				var signalDownstream = !cancelled.get();
 				if (cancelRemote) {
-					sendCancel();
 					cancelled.set(true);
+					settleCancellation();
+				} else {
+					unregisterResponseConsumer();
 				}
-				unregisterResponseConsumer();
 				if (signalDownstream) {
 					downstream.onError(err);
 				}

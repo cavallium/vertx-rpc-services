@@ -255,8 +255,13 @@ public class ServiceServer<T> implements RxCloseable {
 				return;
 			}
 			if (control.cancel()) {
-				msg.reply(Boolean.TRUE);
-				close();
+				// The client retains its response consumer until this acknowledgement. Close
+				// first so every NEXT/terminal message already in flight is ordered before the
+				// acknowledgement, then let the client unregister without a discard race.
+				closeAsync(false).subscribe(
+					() -> msg.reply(Boolean.TRUE),
+					err -> msg.fail(500, formatError(err))
+				);
 				return;
 			}
 			if (control.request() < 0L) {
